@@ -1,0 +1,9 @@
+build/
+frames/
+*.o
+*.out
+*.mp4
+*.gif
+*.ppm
+*.pgm
+.DS_Store
