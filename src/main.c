@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <time.h>
 
 #define DEFAULT_ROWS 25
 #define DEFAULT_COLS 80
@@ -112,6 +112,18 @@ static void handle_key(
     }
 }
 
+static void sleep_ms(int milliseconds) {
+    if (milliseconds <= 0) {
+        return;
+    }
+
+    struct timespec ts;
+    ts.tv_sec = milliseconds / 1000;
+    ts.tv_nsec = (long)(milliseconds % 1000) * 1000000L;
+
+    nanosleep(&ts, NULL);
+}
+
 int main(int argc, char **argv) {
     Config config;
 
@@ -178,7 +190,7 @@ int main(int argc, char **argv) {
             running = 0;
         }
 
-        usleep((useconds_t)config.delay_ms * 1000);
+        sleep_ms(config.delay_ms);
     }
 
     terminal_show_cursor();
