@@ -35,3 +35,20 @@ test-sparse: build/test_sparse_board
 build/test_sparse_board: tests/test_sparse_board.c src/sparse_board.c include/sparse_board.h
 	@mkdir -p build
 	$(CC) $(CFLAGS) tests/test_sparse_board.c src/sparse_board.c -o build/test_sparse_board
+
+
+.PHONY: test-viewport run-sparse-demo
+
+test-viewport: build/test_viewport
+	./build/test_viewport
+
+build/test_viewport: tests/test_viewport.c src/viewport.c src/sparse_board.c include/viewport.h include/sparse_board.h
+	@mkdir -p build
+	$(CC) $(CFLAGS) tests/test_viewport.c src/viewport.c src/sparse_board.c -o build/test_viewport
+
+build/sparse_demo: src/sparse_demo.c src/viewport.c src/sparse_board.c include/viewport.h include/sparse_board.h
+	@mkdir -p build
+	$(CC) $(CFLAGS) src/sparse_demo.c src/viewport.c src/sparse_board.c -o build/sparse_demo
+
+run-sparse-demo: build/sparse_demo
+	./build/sparse_demo

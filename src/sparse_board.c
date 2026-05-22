@@ -332,3 +332,21 @@ SparseBoard *sparse_board_step(const SparseBoard *current) {
     count_map_destroy(&counts);
     return next;
 }
+
+void sparse_board_for_each_live_cell(
+    const SparseBoard *board,
+    SparseBoardCellVisitor visitor,
+    void *user_data
+) {
+    if (!board || !visitor) {
+        return;
+    }
+
+    for (size_t i = 0; i < board->capacity; i++) {
+        const CellEntry *entry = &board->entries[i];
+
+        if (entry->state == ENTRY_OCCUPIED) {
+            visitor(entry->x, entry->y, user_data);
+        }
+    }
+}
