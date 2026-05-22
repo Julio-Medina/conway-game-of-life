@@ -25,3 +25,13 @@ debug: clean all
 
 clean:
 	rm -rf build/*.o $(BIN)
+
+
+.PHONY: test-sparse
+
+test-sparse: build/test_sparse_board
+	./build/test_sparse_board
+
+build/test_sparse_board: tests/test_sparse_board.c src/sparse_board.c include/sparse_board.h
+	@mkdir -p build
+	$(CC) $(CFLAGS) tests/test_sparse_board.c src/sparse_board.c -o build/test_sparse_board
