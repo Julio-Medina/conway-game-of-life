@@ -11,6 +11,10 @@
 #define DEFAULT_COLS 80
 #define DEFAULT_DELAY_MS 150
 
+#define MIN_DELAY_MS 20
+#define MAX_DELAY_MS 2000
+#define DELAY_STEP_MS 50
+
 typedef struct {
     const char *file_path;
     int delay_ms;
@@ -87,14 +91,19 @@ static void handle_key(
 
         case '+':
         case '=':
-            if (*delay_ms > 20) {
-                *delay_ms -= 20;
+            if (*delay_ms > MIN_DELAY_MS) {
+                *delay_ms -= DELAY_STEP_MS;
+                if (*delay_ms < MIN_DELAY_MS) {
+                    *delay_ms = MIN_DELAY_MS;
+                }
             }
             break;
 
         case '-':
         case '_':
-            *delay_ms += 20;
+            if (*delay_ms < MAX_DELAY_MS) {
+                *delay_ms += DELAY_STEP_MS;
+            }
             break;
 
         case 'p':
@@ -164,22 +173,27 @@ int main(int argc, char **argv) {
     int generation = 0;
 
     while (running) {
-        render_board(current, generation, config.delay_ms, paused);
+        int should_step = !paused;
 
-        int key = terminal_read_key();
-
-        if (key == 'n' || key == 'N') {
-            if (paused) {
-                board_step(current, next);
-                board_copy(current, next);
-                board_clear(next);
-                generation++;
+        /*
+         * Drain all pending keypresses before rendering/stepping.
+         * This makes controls more responsive when keys are pressed
+         * during the previous sleep interval.
+         */
+        int key;
+        while ((key = terminal_read_key()) != -1) {
+            if (key == 'n' || key == 'N') {
+                if (paused) {
+                    should_step = 1;
+                }
+            } else {
+                handle_key(key, &running, &paused, &config.delay_ms, current, initial);
             }
-        } else {
-            handle_key(key, &running, &paused, &config.delay_ms, current, initial);
         }
 
-        if (!paused && running) {
+        render_board(current, generation, config.delay_ms, paused);
+
+        if (should_step && running) {
             board_step(current, next);
             board_copy(current, next);
             board_clear(next);
