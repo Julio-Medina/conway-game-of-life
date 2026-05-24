@@ -1,6 +1,8 @@
 CC := gcc
 CFLAGS := -std=c11 -Wall -Wextra -Wpedantic -Iinclude
 LDFLAGS :=
+SDL_CFLAGS := $(shell sdl2-config --cflags 2>/dev/null)
+SDL_LDFLAGS := $(shell sdl2-config --libs 2>/dev/null)
 
 SRC := src/main.c src/life.c src/io.c src/terminal.c
 OBJ := $(SRC:src/%.c=build/%.o)
@@ -52,3 +54,13 @@ build/sparse_demo: src/sparse_demo.c src/viewport.c src/sparse_board.c include/v
 
 run-sparse-demo: build/sparse_demo
 	./build/sparse_demo
+
+
+.PHONY: run-sdl
+
+build/conway_sdl: src/sdl_main.c src/renderer_sdl.c src/sparse_board.c src/viewport.c include/renderer_sdl.h include/sparse_board.h include/viewport.h
+	@mkdir -p build
+	$(CC) $(CFLAGS) $(SDL_CFLAGS) src/sdl_main.c src/renderer_sdl.c src/sparse_board.c src/viewport.c -o build/conway_sdl $(SDL_LDFLAGS)
+
+run-sdl: build/conway_sdl
+	./build/conway_sdl
