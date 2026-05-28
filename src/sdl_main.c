@@ -1,3 +1,4 @@
+#include "builtin_patterns.h"
 #include "renderer_sdl.h"
 #include "sparse_board.h"
 #include "viewport.h"
@@ -6,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define DEFAULT_WINDOW_WIDTH 1200
 #define DEFAULT_WINDOW_HEIGHT 800
@@ -13,24 +15,94 @@
 #define MIN_CELL_SIZE 2
 #define MAX_CELL_SIZE 80
 
-static void load_glider(SparseBoard *board, int x, int y) {
-    sparse_board_set_alive(board, x + 1, y + 0);
-    sparse_board_set_alive(board, x + 2, y + 1);
-    sparse_board_set_alive(board, x + 0, y + 2);
-    sparse_board_set_alive(board, x + 1, y + 2);
-    sparse_board_set_alive(board, x + 2, y + 2);
+typedef struct {
+    const char *pattern_name;
+    int delay_ms;
+    int window_width;
+    int window_height;
+    int cell_size;
+} Config;
+
+static void print_usage(const char *program_name) {
+    fprintf(stderr,
+        "Usage: %s [--pattern <name>] [--delay <ms>] [--width <px>] [--height <px>] [--cell-size <px>]\n"
+        "       %s --list-patterns\n\n"
+        "Examples:\n"
+        "  %s --pattern pulsar\n"
+        "  %s --pattern gosper-gun --cell-size 8\n"
+        "  %s --pattern all --delay 80\n",
+        program_name,
+        program_name,
+        program_name,
+        program_name,
+        program_name
+    );
 }
 
-static void load_blinker(SparseBoard *board, int x, int y) {
-    sparse_board_set_alive(board, x - 1, y);
-    sparse_board_set_alive(board, x, y);
-    sparse_board_set_alive(board, x + 1, y);
+static int parse_args(int argc, char **argv, Config *config) {
+    config->pattern_name = "all";
+    config->delay_ms = 120;
+    config->window_width = DEFAULT_WINDOW_WIDTH;
+    config->window_height = DEFAULT_WINDOW_HEIGHT;
+    config->cell_size = DEFAULT_CELL_SIZE;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--list-patterns") == 0) {
+            builtin_pattern_print_list(stdout);
+            exit(0);
+        } else if (strcmp(argv[i], "--pattern") == 0 && i + 1 < argc) {
+            config->pattern_name = argv[++i];
+        } else if (strcmp(argv[i], "--delay") == 0 && i + 1 < argc) {
+            config->delay_ms = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--width") == 0 && i + 1 < argc) {
+            config->window_width = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--height") == 0 && i + 1 < argc) {
+            config->window_height = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--cell-size") == 0 && i + 1 < argc) {
+            config->cell_size = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
+            print_usage(argv[0]);
+            exit(0);
+        } else {
+            print_usage(argv[0]);
+            return 0;
+        }
+    }
+
+    if (config->delay_ms < 0) {
+        config->delay_ms = 0;
+    }
+
+    if (config->window_width <= 0 || config->window_height <= 0) {
+        return 0;
+    }
+
+    if (config->cell_size < MIN_CELL_SIZE) {
+        config->cell_size = MIN_CELL_SIZE;
+    }
+
+    if (config->cell_size > MAX_CELL_SIZE) {
+        config->cell_size = MAX_CELL_SIZE;
+    }
+
+    return 1;
 }
 
-static void load_demo_pattern(SparseBoard *board) {
-    load_glider(board, 0, 0);
-    load_blinker(board, -12, -3);
-    load_glider(board, 15, 10);
+static int load_curated_scene(SparseBoard *board) {
+    return builtin_pattern_load(board, "pulsar", -38, -20) &&
+           builtin_pattern_load(board, "pentadecathlon", 10, -19) &&
+           builtin_pattern_load(board, "gosper-gun", -48, 8) &&
+           builtin_pattern_load(board, "acorn", 35, 8) &&
+           builtin_pattern_load(board, "lwss", 25, -6) &&
+           builtin_pattern_load(board, "beacon", -4, -2);
+}
+
+static int load_selected_pattern(SparseBoard *board, const char *pattern_name) {
+    if (strcmp(pattern_name, "all") == 0) {
+        return load_curated_scene(board);
+    }
+
+    return builtin_pattern_load(board, pattern_name, -10, -6);
 }
 
 static Viewport viewport_from_renderer(const SdlRenderer *renderer, int origin_x, int origin_y) {
@@ -84,8 +156,8 @@ static void zoom_at_center(SdlRenderer *renderer, Viewport *viewport, int delta)
     viewport_center_on(viewport, center_x, center_y);
 }
 
-static void print_help(void) {
-    puts("SDL2 Conway sparse-board demo");
+static void print_help(const char *pattern_name) {
+    printf("SDL2 Conway sparse-board demo | pattern: %s\n", pattern_name);
     puts("");
     puts("Controls:");
     puts("  q / Esc       quit");
@@ -98,8 +170,14 @@ static void print_help(void) {
     puts("  0             recenter camera");
 }
 
-int main(void) {
-    print_help();
+int main(int argc, char **argv) {
+    Config config;
+
+    if (!parse_args(argc, argv, &config)) {
+        return 1;
+    }
+
+    print_help(config.pattern_name);
 
     SparseBoard *board = sparse_board_create();
     if (!board) {
@@ -107,27 +185,32 @@ int main(void) {
         return 1;
     }
 
-    load_demo_pattern(board);
+    if (!load_selected_pattern(board, config.pattern_name)) {
+        fprintf(stderr, "Unknown or invalid pattern: %s\n\n", config.pattern_name);
+        builtin_pattern_print_list(stderr);
+        sparse_board_destroy(board);
+        return 1;
+    }
 
     SdlRenderer renderer = {0};
 
     if (!sdl_renderer_init(
             &renderer,
             "Conway's Game of Life - Sparse SDL2 Renderer",
-            DEFAULT_WINDOW_WIDTH,
-            DEFAULT_WINDOW_HEIGHT,
-            DEFAULT_CELL_SIZE
+            config.window_width,
+            config.window_height,
+            config.cell_size
         )) {
         sparse_board_destroy(board);
         return 1;
     }
 
-    Viewport viewport = viewport_from_renderer(&renderer, -40, -25);
+    Viewport viewport = viewport_from_renderer(&renderer, -60, -35);
 
     int running = 1;
     int paused = 0;
     int step_once = 0;
-    int delay_ms = 120;
+    int delay_ms = config.delay_ms;
     Uint32 last_step = SDL_GetTicks();
     unsigned long generation = 0;
 
@@ -245,7 +328,8 @@ int main(void) {
         snprintf(
             title,
             sizeof(title),
-            "Conway SDL2 | generation %lu | population %zu | delay %d ms | cell %d px | %s",
+            "Conway SDL2 | pattern %s | gen %lu | pop %zu | delay %d ms | cell %d px | %s",
+            config.pattern_name,
             generation,
             sparse_board_population(board),
             delay_ms,
