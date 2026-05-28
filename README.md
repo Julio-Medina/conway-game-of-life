@@ -281,6 +281,58 @@ This creates:
 build/conway_sdl
 ```
 
+
+## Running SDL2 with different built-in patterns
+
+List the available built-in SDL2 patterns:
+
+```bash
+./build/conway_sdl --list-patterns
+```
+
+Run the default curated scene:
+
+```bash
+make run-sdl
+```
+
+Run one specific pattern:
+
+```bash
+./build/conway_sdl --pattern pulsar
+./build/conway_sdl --pattern pentadecathlon
+./build/conway_sdl --pattern gosper-gun
+./build/conway_sdl --pattern acorn
+```
+
+Useful examples:
+
+```bash
+./build/conway_sdl --pattern pulsar --delay 180 --cell-size 16
+./build/conway_sdl --pattern gosper-gun --delay 60 --cell-size 8
+./build/conway_sdl --pattern all --delay 80 --width 1400 --height 900
+```
+
+Available built-in patterns include:
+
+| Pattern | Type |
+|---|---|
+| `glider` | small spaceship |
+| `blinker` | period-2 oscillator |
+| `toad` | period-2 oscillator |
+| `beacon` | period-2 oscillator |
+| `clock` | period-2 oscillator |
+| `pulsar` | large period-3 oscillator |
+| `pentadecathlon` | period-15 oscillator |
+| `lwss` | lightweight spaceship |
+| `r-pentomino` | long-lived methuselah |
+| `acorn` | long-lived methuselah |
+| `diehard` | eventually vanishing pattern |
+| `gosper-gun` | glider gun |
+| `all` | curated scene with several patterns |
+
+The SDL2 pattern selector currently uses built-in patterns. File-based sparse pattern loading and RLE support are planned future features.
+
 ## Tests
 
 Run sparse-board tests:

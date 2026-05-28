@@ -58,9 +58,9 @@ run-sparse-demo: build/sparse_demo
 
 .PHONY: run-sdl
 
-build/conway_sdl: src/sdl_main.c src/renderer_sdl.c src/sparse_board.c src/viewport.c include/renderer_sdl.h include/sparse_board.h include/viewport.h
+build/conway_sdl: src/sdl_main.c src/renderer_sdl.c src/sparse_board.c src/viewport.c src/builtin_patterns.c include/renderer_sdl.h include/sparse_board.h include/viewport.h include/builtin_patterns.h
 	@mkdir -p build
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) src/sdl_main.c src/renderer_sdl.c src/sparse_board.c src/viewport.c -o build/conway_sdl $(SDL_LDFLAGS)
+	$(CC) $(CFLAGS) $(SDL_CFLAGS) src/sdl_main.c src/renderer_sdl.c src/sparse_board.c src/viewport.c src/builtin_patterns.c -o build/conway_sdl $(SDL_LDFLAGS)
 
 run-sdl: build/conway_sdl
 	./build/conway_sdl
